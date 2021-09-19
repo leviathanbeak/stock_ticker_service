@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 const STOCKS: [&'static str; 6] = ["GOOG", "APPL", "TSLA", "AMZN", "MSFT", "FB"];
 pub(crate) type Price = f64;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Copy, Clone)]
 pub enum StockTrend {
     Uptrend,
     Downtrend,
@@ -15,7 +15,7 @@ pub enum StockTrend {
     NotEnoughData,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 pub struct StockSummary {
     pub trend: StockTrend,
     pub lowest_price: Option<Price>,
@@ -29,6 +29,7 @@ pub struct StockData {
     lowest: HashMap<&'static str, Option<Price>>,
     highest: HashMap<&'static str, Option<Price>>,
     data: HashMap<&'static str, Vec<Price>>,
+    summaries: HashMap<&'static str, Option<StockSummary>>,
 }
 
 impl StockData {
@@ -36,17 +37,20 @@ impl StockData {
         let mut data = HashMap::new();
         let mut highest = HashMap::new();
         let mut lowest = HashMap::new();
+        let mut summaries = HashMap::new();
 
         for stock in STOCKS {
             data.insert(stock, vec![]);
             lowest.insert(stock, None);
             highest.insert(stock, None);
+            summaries.insert(stock, None);
         }
 
         StockData {
             lowest,
             highest,
             data,
+            summaries,
         }
     }
 
@@ -60,11 +64,19 @@ impl StockData {
             self.insert_next(stock, next_price);
             self.insert_lowest(stock, next_price);
             self.insert_highest(stock, next_price);
+
+            let stock_summary = self.get_summary(stock);
+            self.summaries.insert(stock, stock_summary);
         }
     }
 
+    /// get all sumarries
+    pub fn get_summaries(&self) -> &HashMap<&'static str, Option<StockSummary>> {
+        &self.summaries
+    }
+
     /// get the Summary for a given stock    
-    pub fn get_summary(&self, stock: &str) -> Option<StockSummary> {
+    fn get_summary(&self, stock: &str) -> Option<StockSummary> {
         if let Some(current_prices) = self.get_prices(stock) {
             let moving_avg = moving_average(current_prices);
             let trend = get_trend(current_prices);

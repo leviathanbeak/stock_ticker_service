@@ -51,13 +51,16 @@ async fn get_summary(state: Data<AppState>, query: web::Query<StockQuery>) -> Ht
     let stock_data = state.stock_data.read().unwrap();
     let mut result = vec![];
 
+    let summaries = stock_data.get_summaries();
+
     for stock in query.stocks.split(",") {
-        let summary = stock_data.get_summary(stock);
-        if summary.is_some() {
-            result.push(SummaryResponse {
-                stock: stock.into(),
-                summary: summary.unwrap(),
-            });
+        if let Some(summary) = summaries.get(stock) {
+            if summary.is_some() {
+                result.push(SummaryResponse {
+                    stock: stock.into(),
+                    summary: summary.clone().unwrap(),
+                });
+            }
         }
     }
 
