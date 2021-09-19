@@ -9,7 +9,7 @@ use crate::{
 
 use super::socket_session::SocketSession;
 
-const USER_CREDITS: u8 = 45;
+const USER_CREDITS: u32 = 1024;
 
 pub(crate) struct UserStore {
     pub users: HashMap<usize, User>,
@@ -27,7 +27,7 @@ impl Handler<StockUpdated> for UserStore {
         let data = self.stock_data_sink.read().unwrap();
 
         for (_, user) in &mut self.users {
-            let subs = user.subscriptions.len() as u8;
+            let subs = user.subscriptions.len() as u32;
 
             if subs > 0 && user.credits > 0 && user.credits >= subs {
                 let response = user
@@ -72,7 +72,7 @@ impl Handler<Connected> for UserStore {
 }
 
 pub(crate) struct User {
-    credits: u8,
+    credits: u32,
     addr: Addr<SocketSession>,
     id: usize,
     subscriptions: Vec<String>,
