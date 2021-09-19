@@ -45,7 +45,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SocketSession {
             Ok(msg) => msg,
         };
 
-        println!("WEBSOCKET MESSAGE: {:?}", msg);
         match msg {
             ws::Message::Text(text) => {
                 let m = text.trim();
