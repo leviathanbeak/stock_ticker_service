@@ -25,7 +25,6 @@ pub struct StockSummary {
 /// Holds our stock data
 #[derive(Debug)]
 pub struct StockData {
-    thread_rng: ThreadRng,
     lowest: HashMap<&'static str, Option<Price>>,
     highest: HashMap<&'static str, Option<Price>>,
     data: HashMap<&'static str, Vec<Price>>,
@@ -44,7 +43,6 @@ impl StockData {
         }
 
         StockData {
-            thread_rng: rand::thread_rng(),
             lowest,
             highest,
             data,
@@ -52,8 +50,8 @@ impl StockData {
     }
 
     /// randomly generates new price for each stock and adds it to the hash maps
-    pub fn generate_next_tick(&mut self) {
-        let next_prices: [Price; STOCKS.len()] = self.thread_rng.gen();
+    pub fn generate_next_tick(&mut self, thread_rng: &mut ThreadRng) {
+        let next_prices: [Price; STOCKS.len()] = thread_rng.gen();
         let mut iter = next_prices.iter().map(|v| v * 100f64);
 
         for stock in STOCKS {
@@ -156,24 +154,26 @@ mod tests {
         let mut stock_data = StockData::initialize();
         let stock = "APPL";
 
+        let mut thread_rng = rand::thread_rng();
+
         assert!(stock_data.data.contains_key(stock));
         assert!(stock_data.get_lowest_price(stock).is_none());
         assert!(stock_data.get_highest_price(stock).is_none());
 
         // first tick happens
-        stock_data.generate_next_tick();
+        stock_data.generate_next_tick(&mut thread_rng);
 
         assert!(stock_data.get_lowest_price(stock).is_some());
         assert!(stock_data.get_highest_price(stock).is_some());
         assert_eq!(stock_data.data.get(stock).unwrap().len(), 1);
 
         // second tick happens
-        stock_data.generate_next_tick();
+        stock_data.generate_next_tick(&mut thread_rng);
         assert_eq!(stock_data.data.get(stock).unwrap().len(), 2);
 
         // 100 more ticks happen
         for _ in 0..100 {
-            stock_data.generate_next_tick();
+            stock_data.generate_next_tick(&mut thread_rng);
         }
 
         assert_eq!(stock_data.data.get(stock).unwrap().len(), 102);
