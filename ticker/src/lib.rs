@@ -1,8 +1,26 @@
 use rand::{self, prelude::ThreadRng, Rng};
 use std::collections::HashMap;
+use utils::{get_trend, moving_average};
+mod utils;
 
 const STOCKS: [&'static str; 6] = ["GOOG", "APPL", "TSLA", "AMZN", "MSFT", "FB"];
-type Price = f64;
+pub(crate) type Price = f64;
+
+#[derive(Debug, PartialEq)]
+pub enum StockTrend {
+    Uptrend,
+    Downtrend,
+    Sideways,
+    NotEnoughData,
+}
+
+#[derive(Debug)]
+pub struct StockSummary {
+    pub trend: StockTrend,
+    pub lowest_price: Option<Price>,
+    pub highest_price: Option<Price>,
+    pub moving_average: Price,
+}
 
 /// Holds our stock data
 #[derive(Debug)]
@@ -46,18 +64,46 @@ impl StockData {
         }
     }
 
+    /// get the Summary for a given stock    
+    pub fn get_summary(&self, stock: &str) -> Option<StockSummary> {
+        if let Some(current_prices) = self.get_prices(stock) {
+            let moving_avg = moving_average(current_prices);
+            let trend = get_trend(current_prices);
+            Some(StockSummary {
+                trend,
+                lowest_price: self.get_lowest_price(stock),
+                highest_price: self.get_highest_price(stock),
+                moving_average: moving_avg,
+            })
+        } else {
+            None
+        }
+    }
+
+    /// get last recorded price for a stock
+    pub fn get_last_price(&self, stock: &str) -> Option<Price> {
+        if let Some(prices) = self.get_prices(stock) {
+            match prices.last() {
+                Some(price) => Some(*price),
+                None => None,
+            }
+        } else {
+            None
+        }
+    }
+
     /// get history of all recorded prices for given stock
-    pub fn get_prices(&self, stock: &str) -> Option<&Vec<Price>> {
+    fn get_prices(&self, stock: &str) -> Option<&Vec<Price>> {
         self.data.get(stock)
     }
 
     /// get lowest recorded price for a given stock
-    pub fn get_lowest_price(&self, stock: &str) -> Option<Price> {
+    fn get_lowest_price(&self, stock: &str) -> Option<Price> {
         *self.lowest.get(stock).unwrap_or(&None)
     }
 
     /// get highest recorded price for a given stock
-    pub fn get_highest_price(&self, stock: &str) -> Option<Price> {
+    fn get_highest_price(&self, stock: &str) -> Option<Price> {
         *self.highest.get(stock).unwrap_or(&None)
     }
 
@@ -139,5 +185,15 @@ mod tests {
             assert!(lowest <= *price);
             assert!(highest >= *price);
         }
+
+        let summary = stock_data.get_summary(stock);
+        assert!(summary.is_some());
+        let summary = summary.unwrap();
+
+        assert!(summary.highest_price.is_some());
+        assert!(summary.lowest_price.is_some());
+        assert_eq!(summary.highest_price.unwrap(), highest);
+        assert_eq!(summary.lowest_price.unwrap(), lowest);
+        assert!(summary.moving_average > 0.0);
     }
 }
