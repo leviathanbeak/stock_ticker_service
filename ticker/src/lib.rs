@@ -1,10 +1,10 @@
 use rand::{self, prelude::ThreadRng, Rng};
 use std::collections::HashMap;
 
-const TICKERS: [&'static str; 6] = ["GOOG", "APPL", "TSLA", "AMZN", "MSFT", "FB"];
+const STOCKS: [&'static str; 6] = ["GOOG", "APPL", "TSLA", "AMZN", "MSFT", "FB"];
 type Price = f64;
 
-/// Holds our ticker data
+/// Holds our stock data
 #[derive(Debug)]
 pub struct StockData {
     thread_rng: ThreadRng,
@@ -19,10 +19,10 @@ impl StockData {
         let mut highest = HashMap::new();
         let mut lowest = HashMap::new();
 
-        for ticker in TICKERS {
-            data.insert(ticker, vec![]);
-            lowest.insert(ticker, None);
-            highest.insert(ticker, None);
+        for stock in STOCKS {
+            data.insert(stock, vec![]);
+            lowest.insert(stock, None);
+            highest.insert(stock, None);
         }
 
         StockData {
@@ -33,68 +33,68 @@ impl StockData {
         }
     }
 
-    /// randomly generates new data for each ticker and adds it to the hash map
+    /// randomly generates new price for each stock and adds it to the hash maps
     pub fn generate_next_tick(&mut self) {
-        let next_prices: [Price; TICKERS.len()] = self.thread_rng.gen();
+        let next_prices: [Price; STOCKS.len()] = self.thread_rng.gen();
         let mut iter = next_prices.iter().map(|v| v * 100f64);
 
-        for ticker in TICKERS {
+        for stock in STOCKS {
             let next_price = iter.next().unwrap();
-            self.insert_next(ticker, next_price);
-            self.insert_lowest(ticker, next_price);
-            self.insert_highest(ticker, next_price);
+            self.insert_next(stock, next_price);
+            self.insert_lowest(stock, next_price);
+            self.insert_highest(stock, next_price);
         }
     }
 
-    /// get history of all recorded prices for given ticker
-    pub fn get_prices(&self, ticker: &str) -> Option<&Vec<Price>> {
-        self.data.get(ticker)
+    /// get history of all recorded prices for given stock
+    pub fn get_prices(&self, stock: &str) -> Option<&Vec<Price>> {
+        self.data.get(stock)
     }
 
-    /// get lowest recorded price for a given ticker
-    pub fn get_lowest_price(&self, ticker: &str) -> Option<Price> {
-        *self.lowest.get(ticker).unwrap_or(&None)
+    /// get lowest recorded price for a given stock
+    pub fn get_lowest_price(&self, stock: &str) -> Option<Price> {
+        *self.lowest.get(stock).unwrap_or(&None)
     }
 
-    /// get highest recorded price for a given ticker
-    pub fn get_highest_price(&self, ticker: &str) -> Option<Price> {
-        *self.highest.get(ticker).unwrap_or(&None)
+    /// get highest recorded price for a given stock
+    pub fn get_highest_price(&self, stock: &str) -> Option<Price> {
+        *self.highest.get(stock).unwrap_or(&None)
     }
 
-    /// inserts new value to the end of the vector of a given tick
-    fn insert_next(&mut self, ticker: &'static str, price: Price) {
-        if let Some(current_prices) = self.data.get_mut(ticker) {
+    /// inserts new value to the end of the vector of a given stock
+    fn insert_next(&mut self, stock: &'static str, price: Price) {
+        if let Some(current_prices) = self.data.get_mut(stock) {
             current_prices.push(price);
         }
     }
 
-    /// inserts new value for given tick if it's the lowest ever recorded
-    fn insert_lowest(&mut self, ticker: &'static str, price: Price) {
-        if let Some(current_price) = self.lowest.get(ticker) {
+    /// inserts new value for given stock if it's the lowest ever recorded
+    fn insert_lowest(&mut self, stock: &'static str, price: Price) {
+        if let Some(current_price) = self.lowest.get(stock) {
             match current_price {
                 Some(v) => {
                     if price < *v {
-                        self.lowest.insert(ticker, Some(price));
+                        self.lowest.insert(stock, Some(price));
                     }
                 }
                 None => {
-                    self.lowest.insert(ticker, Some(price));
+                    self.lowest.insert(stock, Some(price));
                 }
             };
         };
     }
 
-    /// inserts new value for given tick if it's the highest ever recorded
-    fn insert_highest(&mut self, ticker: &'static str, price: Price) {
-        if let Some(current_price) = self.highest.get(ticker) {
+    /// inserts new value for given stock if it's the highest ever recorded
+    fn insert_highest(&mut self, stock: &'static str, price: Price) {
+        if let Some(current_price) = self.highest.get(stock) {
             match current_price {
                 Some(v) => {
                     if price > *v {
-                        self.highest.insert(ticker, Some(price));
+                        self.highest.insert(stock, Some(price));
                     }
                 }
                 None => {
-                    self.highest.insert(ticker, Some(price));
+                    self.highest.insert(stock, Some(price));
                 }
             };
         };
