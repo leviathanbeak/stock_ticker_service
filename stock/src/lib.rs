@@ -75,6 +75,18 @@ impl StockData {
         &self.summaries
     }
 
+    /// get last recorded price for a stock
+    pub fn get_last_price(&self, stock: &str) -> Option<Price> {
+        if let Some(prices) = self.get_prices(stock) {
+            match prices.last() {
+                Some(price) => Some(*price),
+                None => None,
+            }
+        } else {
+            None
+        }
+    }
+
     /// get the Summary for a given stock    
     fn get_summary(&self, stock: &str) -> Option<StockSummary> {
         if let Some(current_prices) = self.get_prices(stock) {
@@ -86,18 +98,6 @@ impl StockData {
                 highest_price: self.get_highest_price(stock),
                 moving_average: moving_avg,
             })
-        } else {
-            None
-        }
-    }
-
-    /// get last recorded price for a stock
-    pub fn get_last_price(&self, stock: &str) -> Option<Price> {
-        if let Some(prices) = self.get_prices(stock) {
-            match prices.last() {
-                Some(price) => Some(*price),
-                None => None,
-            }
         } else {
             None
         }

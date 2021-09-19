@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use actix::{Actor, Addr, Context, Handler};
 
 use crate::{
-    messages::{Connected, SendClientMessage, StockUpdated},
+    messages::{Connected, SendClientMessage, StockUpdated, UpdateUserSubscriptions},
     state::StockDataSink,
 };
 
@@ -26,12 +26,38 @@ impl Handler<StockUpdated> for UserStore {
     fn handle(&mut self, _msg: StockUpdated, _ctx: &mut Self::Context) -> Self::Result {
         let data = self.stock_data_sink.read().unwrap();
 
-        for (key, user) in &mut self.users {
-            if user.credits > 0 {
-                // user.addr.do_send(SendMessage {
-                //     message: format!("{:?}", data.get_summary("APPL").unwrap()),
-                // })
+        for (_, user) in &mut self.users {
+            let subs = user.subscriptions.len() as u8;
+
+            if subs > 0 && user.credits > 0 && user.credits >= subs {
+                let response = user
+                    .subscriptions
+                    .iter()
+                    .filter(|stock| data.get_last_price(stock).is_some())
+                    .map(|stock| format!("{}: {}", stock, data.get_last_price(stock).unwrap()))
+                    .collect::<Vec<String>>()
+                    .join(",");
+
+                if !response.is_empty() {
+                    user.addr.do_send(SendClientMessage { message: response });
+                    user.credits = user.credits - subs;
+                }
             }
+        }
+    }
+}
+
+impl Handler<UpdateUserSubscriptions> for UserStore {
+    type Result = ();
+
+    fn handle(&mut self, msg: UpdateUserSubscriptions, _ctx: &mut Self::Context) -> Self::Result {
+        let user = self.users.get_mut(&msg.user_id);
+        if user.is_some() {
+            let user = user.unwrap();
+            for stock in msg.subscriptions {
+                user.subscriptions.push(stock);
+            }
+            eprintln!("{:?}", user.subscriptions);
         }
     }
 }

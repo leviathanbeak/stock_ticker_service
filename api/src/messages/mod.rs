@@ -18,3 +18,10 @@ pub(crate) struct Connected {
 pub(crate) struct SendClientMessage {
     pub message: String,
 }
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub(crate) struct UpdateUserSubscriptions {
+    pub subscriptions: Vec<String>,
+    pub user_id: usize,
+}

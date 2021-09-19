@@ -1,7 +1,7 @@
 use actix::{Actor, ActorContext, Addr, AsyncContext, Handler, Running, StreamHandler};
 use actix_web_actors::ws;
 
-use crate::messages::{Connected, SendClientMessage};
+use crate::messages::{Connected, SendClientMessage, UpdateUserSubscriptions};
 
 use super::user_store::UserStore;
 
@@ -15,7 +15,7 @@ impl Actor for SocketSession {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let addr = ctx.address();
-        let user_id = self.addr.do_send(Connected {
+        self.addr.do_send(Connected {
             addr: addr.clone(),
             user_id: self.user_id,
         });
@@ -47,26 +47,23 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SocketSession {
 
         println!("WEBSOCKET MESSAGE: {:?}", msg);
         match msg {
-            ws::Message::Ping(msg) => {
-                //self.hb = Instant::now();
-                ctx.pong(&msg);
-            }
-            ws::Message::Pong(_) => {
-                //self.hb = Instant::now();
-            }
             ws::Message::Text(text) => {
                 let m = text.trim();
-                // we check for /sss type of messages
+                if m.starts_with('/') {
+                    let v: Vec<&str> = m.splitn(2, ' ').collect();
+                    if v[0] == "/subscribe" {
+                        if !v[1].is_empty() {
+                            let subscriptions = v[1].split(",").map(|v| v.trim().into()).collect();
+
+                            self.addr.do_send(UpdateUserSubscriptions {
+                                subscriptions,
+                                user_id: self.user_id,
+                            });
+                        }
+                    }
+                }
             }
-            ws::Message::Binary(_) => println!("Unexpected binary"),
-            ws::Message::Close(reason) => {
-                ctx.close(reason);
-                ctx.stop();
-            }
-            ws::Message::Continuation(_) => {
-                ctx.stop();
-            }
-            ws::Message::Nop => (),
+            _ => (),
         }
     }
 }
