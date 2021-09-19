@@ -57,7 +57,6 @@ impl Handler<UpdateUserSubscriptions> for UserStore {
             for stock in msg.subscriptions {
                 user.subscriptions.push(stock);
             }
-            eprintln!("{:?}", user.subscriptions);
         }
     }
 }
