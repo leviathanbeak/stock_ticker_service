@@ -1,4 +1,4 @@
-# Stocker Ticker Service
+# Stock Ticker Service
 
 ### Info
 
