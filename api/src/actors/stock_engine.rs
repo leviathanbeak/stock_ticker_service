@@ -21,8 +21,9 @@ pub(crate) struct StockEngine {
 impl Actor for StockEngine {
     type Context = Context<Self>;
 
+    /// once started, perform ticking and update of stock data, and inform UserStore
     fn started(&mut self, _ctx: &mut Self::Context) {
-        let data = self.stock_data_sink.clone();
+        let stock_data = self.stock_data_sink.clone();
         let user_store = self.user_store.clone();
         let mut thread_rng = rand::thread_rng();
 
@@ -30,7 +31,10 @@ impl Actor for StockEngine {
             let mut task = interval_at(Instant::now(), Duration::from_secs(TICK_INTERVAL));
 
             while task.next().await.is_some() {
-                data.write().unwrap().generate_next_tick(&mut thread_rng);
+                stock_data
+                    .write()
+                    .unwrap()
+                    .generate_next_tick(&mut thread_rng);
                 user_store.do_send(StockUpdated {});
             }
         });
