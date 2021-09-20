@@ -86,8 +86,57 @@ pub struct StockQuery {
     stocks: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct SummaryResponse {
     stock: String,
     summary: StockSummary,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::dev::{Service, ServiceResponse};
+    use actix_web::{http, test, web, App};
+    use std::sync::{Arc, RwLock};
+    use stock::{StockData, StockTrend};
+
+    #[actix_rt::test]
+    async fn test_get_summary() {
+        let mut stock_data = StockData::initialize();
+        let mut thread_rng = rand::thread_rng();
+        stock_data.generate_next_tick(&mut thread_rng);
+
+        let app_state = Data::new(AppState {
+            stock_data: Arc::new(RwLock::new(stock_data)),
+        });
+
+        let app = App::new()
+            .app_data(app_state.clone())
+            .route("/summary", web::get().to(get_summary));
+
+        let mut app = test::init_service(app).await;
+        let req = test::TestRequest::get().uri("/summary").to_request();
+        let resp: ServiceResponse = app.call(req).await.unwrap();
+        assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
+
+        let req = test::TestRequest::get()
+            .uri("/summary?stocks=APPL,GOOG")
+            .to_request();
+        let resp: ServiceResponse = app.call(req).await.unwrap();
+        assert_eq!(resp.status(), http::StatusCode::OK);
+
+        let req = test::TestRequest::get()
+            .uri("/summary?stocks=APPL,GOOG")
+            .to_request();
+        let sum_resp: Vec<SummaryResponse> = test::read_response_json(&mut app, req).await;
+
+        assert_eq!(sum_resp.len(), 2);
+
+        let apple_summary = sum_resp.first().unwrap();
+        assert_eq!(apple_summary.stock, "APPL");
+        assert!(apple_summary.summary.highest_price.is_some());
+        assert!(apple_summary.summary.lowest_price.is_some());
+        assert!(apple_summary.summary.moving_average > 0.0);
+        assert_eq!(apple_summary.summary.trend, StockTrend::NotEnoughData);
+    }
 }

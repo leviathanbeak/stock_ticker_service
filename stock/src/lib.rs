@@ -15,7 +15,7 @@ pub enum StockTrend {
     NotEnoughData,
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq)]
 pub struct StockSummary {
     pub trend: StockTrend,
     pub lowest_price: Option<Price>,

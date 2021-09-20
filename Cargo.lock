@@ -335,6 +335,7 @@ name = "api"
 version = "0.1.0"
 dependencies = [
  "actix",
+ "actix-rt",
  "actix-web",
  "actix-web-actors",
  "env_logger",
